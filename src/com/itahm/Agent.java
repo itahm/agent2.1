@@ -36,9 +36,9 @@ import com.itahm.enterprise.Enterprise;
 
 public class Agent {
 
-	private static boolean isDebug = true;
+	public static boolean isDemo = true;
 	
-	public final static String VERSION = "2.0.3.0";
+	public final static String VERSION = "2.0.3.1";
 	public final static String API_KEY = "AIzaSyBg6u1cj9pPfggp-rzQwvdsTGKPgna0RrA";
 	private final static long DAY1 = 24 *60 *60 *1000;
 	private final static String DATA = "data";
@@ -104,7 +104,7 @@ public class Agent {
 			 JSONObject account = accountData.getJSONObject(username);
 			 
 			 if (account.getString("password").equals(password)) {
-				// signin 성공, cookie 발행
+				// signin �꽦怨�, cookie 諛쒗뻾
 				return Session.getInstance(account.getInt("level"));
 			 }
 		}
@@ -430,50 +430,66 @@ public class Agent {
 		*/
 		int tcp = 2014;
 		Calendar c = Calendar.getInstance();
+		File path = null;
+		
+		for (int i=0, _i=args.length; i<_i; i++) {
+			if (args[i].indexOf("-") != 0) {
+				continue;
+			}
+			
+			switch(args[i].substring(1).toUpperCase()) {
+			case "DEBUG":
+				break;
+			case "PATH":
+				path = new File(args[++i]);
+				
+				break;
+			}
+			
+		}
 		
 		try {
-			root = isDebug?
-				new File("F:\\ITAhM\\project\\demo.2.0\\office"):
-				new File(Agent.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-				
+			root = path == null? new File(Agent.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(): path;
 			dataRoot = new File(root, DATA);
 			
 			if (!dataRoot.exists()) {
 				if (!dataRoot.mkdir()) {
-					System.out.println("데이터베이스를 생성할 수 없습니다.");
+					System.out.println("데이터베이스를 초기화 할 수 없습니다[1].");
 					
 					return;
 				} 
 			}
 			else if (!dataRoot.isDirectory()) {
-				System.out.println("데이터베이스를 생성할 수 없습니다.");
+				System.out.println("데이터베이스를 초기화 할 수 없습니다[2].");
 				
 				return;
 			}
 
-			try {
-				c.setTimeInMillis(Files.readAttributes(dataRoot.toPath(), BasicFileAttributes.class).creationTime().toMillis());
-			} catch (IOException e) {
-				System.out.println("데이터베이스를 생성할 수 없습니다.");
+			if (isDemo) {
+				try {
+					c.setTimeInMillis(Files.readAttributes(dataRoot.toPath(), BasicFileAttributes.class).creationTime().toMillis());
+				} catch (IOException e) {
+					System.out.println("데이터베이스를 초기화 할 수 없습니다[3].");
+					
+					return;
+				}
 				
-				return;
+				c.set(Calendar.MONTH, c.get(Calendar.MONTH) +1);
+				c.set(Calendar.HOUR_OF_DAY, 0);
+				c.set(Calendar.MINUTE, 0);
+				c.set(Calendar.SECOND, 0);
+				c.set(Calendar.MILLISECOND, 0);
+				
+				expire = c.getTimeInMillis();
 			}
 			
-			c.set(Calendar.MONTH, c.get(Calendar.MONTH) +1);
-			c.set(Calendar.HOUR_OF_DAY, 0);
-			c.set(Calendar.MINUTE, 0);
-			c.set(Calendar.SECOND, 0);
-			c.set(Calendar.MILLISECOND, 0);
-			
-			expire = c.getTimeInMillis();
-			
-			if (Calendar.getInstance().getTimeInMillis() > expire && !isDebug) {
+			if (expire > 0 && Calendar.getInstance().getTimeInMillis() > expire) {
 				System.out.println("라이선스가 만료되었습니다.");
 				
 				return;
 			}
 		} catch (URISyntaxException urise) {
-			System.out.println("데이터베이스를 생성할 수 없습니다.");
+			System.out.println("데이터베이스를 초기화 할 수 없습니다[4].");
 			
 			return;
 		}

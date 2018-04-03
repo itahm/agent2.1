@@ -8,8 +8,25 @@ import com.itahm.Agent;
 
 public class Device extends Table {
 	
+	private static final String PREFIX = "node.";
+	private long id = -1;
+	
 	public Device(File dataRoot) throws IOException {
 		super(dataRoot, Name.DEVICE);
+		
+		String ip;
+		
+		for (Object key : super.table.keySet()) {
+			ip = (String)key;
+			
+			if (ip.indexOf(PREFIX) == 0) {
+				try {
+					id = Math.max(id, Long.valueOf(ip.replace(PREFIX, "")));
+				}
+				
+				catch(NumberFormatException nfe) {}
+			}
+		}
 	}
 	
 	/**
@@ -33,6 +50,10 @@ public class Device extends Table {
 					.put("x", 0)
 					.put("y", 0)
 					.put("ifEntry", new JSONObject()));
+			}
+			
+			if ("".equals(ip)) {
+				ip = PREFIX + ++id;
 			}
 		}
 		
