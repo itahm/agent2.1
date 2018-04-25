@@ -36,7 +36,12 @@ import com.itahm.enterprise.Enterprise;
 
 public class Agent {
 
-	public static boolean isDemo = true;
+	/* Configuration */
+	public static boolean isDemo = false;
+	private static final byte [] license = new byte [] {(byte)0x6c, (byte)0x3b, (byte)0xe5, (byte)0x51, (byte)0x25, (byte)0x4c};
+	//private static final byte [] license = null;
+	private static long expire = 1546268400000L;
+	/* Configuration */
 	
 	public final static String VERSION = "2.0.3.1";
 	public final static String API_KEY = "AIzaSyBg6u1cj9pPfggp-rzQwvdsTGKPgna0RrA";
@@ -48,8 +53,6 @@ public class Agent {
 	public final static int DEF_TIMEOUT = 3000;
 	
 	private static Map<Table.Name, Table> tables = new HashMap<>();
-	
-	private static long expire = 0;
 	private static Log log;
 	private static SNMPAgent snmp;
 	private static ICMPAgent icmp;
@@ -268,10 +271,6 @@ public class Agent {
 		return snmp.getNodeData(ip, offline);
 	}
 	
-	public static Response executeEnterprise(Request request, JSONObject data) {
-		return 	snmp.executeEnterprise(request, data);
-	}
-	
 	public static JSONObject snmpTest() {
 		return snmp.test();
 	}
@@ -396,10 +395,16 @@ public class Agent {
 		.put("usage", batch.lastDiskUsage)
 		.put("java", System.getProperty("java.version"))
 		.put("path", root.getAbsoluteFile().toString())
+		.put("license", license == null? false: true)
+		.put("demo", isDemo)
 		.put("expire", expire);
 	}
 	
 	public static boolean hasMAC(byte [] mac) throws SocketException {
+		if (mac == null) {
+			return true;
+		}
+		
 		Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
 		NetworkInterface ni;
 		byte [] ba;
@@ -422,12 +427,12 @@ public class Agent {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		/*if (!hasMAC(new byte [] {})) {
+		if (!hasMAC(license)) {
 			System.out.println("Check your License.");
 			
 			return;
 		}
-		*/
+		
 		int tcp = 2014;
 		Calendar c = Calendar.getInstance();
 		File path = null;

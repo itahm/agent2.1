@@ -176,7 +176,7 @@ public class RollingFile {
 	
 	public JSONObject getData(long start, long end, boolean summary) throws IOException {
 		JSONObject data;
-		long now = Calendar.getInstance().getTimeInMillis();
+		final long now = Calendar.getInstance().getTimeInMillis();
 		
 		if (summary) {
 			data = new JSONSummary(this.root).getJSON(start, end);
@@ -207,12 +207,12 @@ public class RollingFile {
 		int count = 0;
 		
 		for (Object key : this.hourData.keySet()) {
-			sum.add(BigInteger.valueOf(this.hourData.getLong((String)key)));
+			sum = sum.add(BigInteger.valueOf(this.hourData.getLong((String)key)));
 			
 			count++;
 		}
 		
-		this.summary.put("avg", sum.divide(BigInteger.valueOf(count)).longValue());
+		this.summary.put("avg", count > 0? sum.divide(BigInteger.valueOf(count)).longValue(): 0);
 	}
 	
 	public long getLoad() {

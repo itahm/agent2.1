@@ -59,9 +59,6 @@ public class Extra implements Command {
 				return Response.getInstance(Response.Status.OK,
 					Agent.getLog(data.getLong("date")));
 			
-			case "enterprise":
-				return Agent.executeEnterprise(request, data);
-			
 			case "syslog":
 				return Response.getInstance(Response.Status.OK,
 					new JSONObject().put("log", Agent.getSyslog(data.getLong("date"))).toString());

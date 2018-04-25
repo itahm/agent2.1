@@ -4,25 +4,16 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.itahm.enterprise.Extension;
-import com.itahm.http.Request;
-import com.itahm.http.Response;
 import com.itahm.json.JSONException;
 import com.itahm.json.JSONObject;
 
-import org.snmp4j.CommandResponder;
-import org.snmp4j.CommandResponderEvent;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.mp.MPv3;
@@ -35,11 +26,8 @@ import org.snmp4j.security.SecurityModels;
 import org.snmp4j.security.SecurityProtocols;
 import org.snmp4j.security.USM;
 import org.snmp4j.security.UsmUser;
-import org.snmp4j.smi.Address;
 import org.snmp4j.smi.OID;
 import org.snmp4j.smi.OctetString;
-import org.snmp4j.smi.UdpAddress;
-import org.snmp4j.smi.Variable;
 import org.snmp4j.smi.VariableBinding;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
@@ -87,7 +75,6 @@ public class SNMPAgent extends Snmp implements Closeable {
 	private final Table criticalTable;
 	private final TopTable<Resource> topTable;
 	private final Timer timer;
-	private final Extension enterprise;
 	
 	public SNMPAgent(File root) throws IOException {
 		super(new DefaultUdpTransportMapping());
@@ -109,45 +96,15 @@ public class SNMPAgent extends Snmp implements Closeable {
 		nodeRoot = new File(root, "node");
 		nodeRoot.mkdir();
 		
-		enterprise = loadEnterprise();
-		
 		initialize();
 	}
 	
 	public void initialize() throws IOException {
 		initUSM();
 		
-		super.addCommandResponder(new CommandResponder() {
-
-			@Override
-			public void processPdu(CommandResponderEvent event) {
-				PDU pdu = event.getPDU();
-				
-				if (pdu != null) {
-					parseTrap(event.getPeerAddress(), event.getSecurityName(), pdu);
-				}
-			}
-			
-		});
-		
 		super.listen();
 		
 		initNode();
-	}
-	
-	public Extension loadEnterprise() {
-		try {
-			URI uri = this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI();
-			
-			File f = new File(new File(uri), "ITAhMEnterprise.jar");
-			try (URLClassLoader ucl = new URLClassLoader(new URL [] {f.toURI().toURL()})) {
-				return (Extension)(ucl.loadClass("com.itahm.enterprise.Enterprise").newInstance());
-			} 
-		} catch (Exception e) {
-			System.out.println("Enterprise is not set.");
-		}
-		
-		return null;
 	}
 	
 	public void setRequestOID(PDU pdu) {
@@ -178,18 +135,6 @@ public class SNMPAgent extends Snmp implements Closeable {
 		pdu.add(new VariableBinding(RequestOID.hrStorageAllocationUnits));
 		pdu.add(new VariableBinding(RequestOID.hrStorageSize));
 		pdu.add(new VariableBinding(RequestOID.hrStorageUsed));
-		
-		if (this.enterprise != null) {
-			this.enterprise.setRequestOID(pdu);
-		}
-	}
-	
-	public boolean parseEnterprise(SNMPNode node, OID response, Variable variable, OID request) {
-		if (this.enterprise != null) {
-			return this.enterprise.parseRequest(node, response, variable, request);
-		}
-		
-		return false;
 	}
 	
 	public void addNode(String ip, String profileName) throws IOException {
@@ -676,35 +621,6 @@ public class SNMPAgent extends Snmp implements Closeable {
 			
 			sendNextRequest(node);
 		}
-	}
-	
-	private final void parseTrap(Address addr, byte [] ba, PDU pdu) {
-		String ip = ((UdpAddress)addr).getInetAddress().getHostAddress();
-		SNMPNode node = this.nodeList.get(ip);
-		
-		if (node == null) {
-			return;
-		}
-		
-		Vector<? extends VariableBinding> vbs = pdu.getVariableBindings();
-		VariableBinding vb;
-		
-		for (int i = 0, _i= vbs.size();i< _i; i++) {
-			vb = (VariableBinding)vbs.get(i);
-			
-			if (this.enterprise == null || !this.enterprise.parseTrap(node, vb.getOid(), vb.getVariable())) {
-				node.parseTrap(vb.getOid(), vb.getVariable());
-			}
-		}
-	}
-	
-	public Response executeEnterprise(Request request, JSONObject data) {
-		if (this.enterprise == null) {
-			return Response.getInstance(Response.Status.BADREQUEST,
-					new JSONObject().put("error", "enterprise is not set").toString());
-		}
-		
-		return this.enterprise.execute(request, data);
 	}
 	
 	public final long calcLoad() {

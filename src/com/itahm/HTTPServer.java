@@ -26,11 +26,11 @@ public class HTTPServer extends Listener {
 
 	public static void sendResponse(Request request, Response response) throws IOException {
 		String origin = request.getRequestHeader(Request.Header.ORIGIN);
-		
+		/*
 		if (origin == null || Agent.isDemo) {
 			origin = "http://itahm.com";
 		}
-		
+		*/
 		response.setResponseHeader("Access-Control-Allow-Origin", origin);
 		response.setResponseHeader("Access-Control-Allow-Credentials", "true");
 		

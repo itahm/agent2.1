@@ -483,11 +483,6 @@ public class SNMPNode extends Node {
 	}
 
 	@Override
-	protected boolean parseEnterprise(OID response, Variable variable, OID request) {
-		return this.agent.parseEnterprise(this, response, variable, request);
-	}
-
-	@Override
 	protected void onTimeout(boolean timeout) {
 		this.agent.onTimeout(this.ip, timeout);
 	}

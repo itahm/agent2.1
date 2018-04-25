@@ -498,9 +498,6 @@ public abstract class Node implements Runnable, Closeable {
 			else if (request.startsWith(RequestOID.axgate)) {
 				return parseAgate(response, variable, request);
 			}
-			else {
-				return parseEnterprise(response, variable, request);
-			}
 		}
 		
 		return false;
@@ -579,8 +576,6 @@ public abstract class Node implements Runnable, Closeable {
 	abstract protected void onResponse(boolean success);
 	abstract protected void onTimeout(boolean timeout);
 	abstract protected void onException(Exception e);
-	
-	abstract protected boolean parseEnterprise(OID response, Variable variable, OID request);
 	
 	public static void main(String [] args) throws IOException {
 	}
