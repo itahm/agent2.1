@@ -24,8 +24,12 @@ public class TestNode extends TmpNode {
 
 	@Override
 	public void onSuccess(String profileName) {
-		Table deviceTable = Agent.getTable(Table.Name.DEVICE);
-		Table monitorTable = Agent.getTable(Table.Name.MONITOR);
+		if (!this.agent.registerNode(this.ip, profileName)) {
+			return;
+		}			
+		
+		final Table deviceTable = Agent.getTable(Table.Name.DEVICE);
+		final Table monitorTable = Agent.getTable(Table.Name.MONITOR);
 	
 		if (deviceTable.getJSONObject(super.ip) == null) {
 			try {
@@ -56,15 +60,7 @@ public class TestNode extends TmpNode {
 			Agent.syslog(Util.EToString(ioe));
 		}
 		
-		try {
-			this.agent.addNode(this.ip, profileName);
-			
-			Agent.log(ip, String.format("%s SNMP 등록 성공.", super.ip), "", true, false);
-		} catch (IOException ioe) {
-			Agent.syslog(Util.EToString(ioe));
-			
-			Agent.log(ip, "시스템에 심각한 오류가 있습니다.", "information", false, false);
-		}
+		Agent.log(ip, String.format("%s SNMP 등록 성공.", super.ip), Log.Type.SYSTEM, true, false);
 	}
 
 	@Override
@@ -73,6 +69,6 @@ public class TestNode extends TmpNode {
 			return;
 		}
 		
-		Agent.log(ip, String.format("%s SNMP 등록 실패. status[%d]", super.ip, status), "shutdown", false, false);
+		Agent.log(ip, String.format("%s SNMP 등록 실패. status[%d]", super.ip, status), Log.Type.SHUTDOWN, false, false);
 	}
 }

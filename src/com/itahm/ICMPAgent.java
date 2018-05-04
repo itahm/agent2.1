@@ -92,7 +92,7 @@ public class ICMPAgent implements ICMPListener, Closeable {
 				}
 				
 				if (!isReachable) {
-					Agent.log(ip, String.format("%s ICMP 등록 실패.", ip), "shutdown", false, false);
+					Agent.log(ip, String.format("%s ICMP 등록 실패.", ip), Log.Type.SHUTDOWN, false, false);
 				}
 				else {
 					monitorTable.getJSONObject().put(ip, new JSONObject()
@@ -108,7 +108,7 @@ public class ICMPAgent implements ICMPListener, Closeable {
 					
 					addNode(ip);
 					
-					Agent.log(ip, String.format("%s ICMP 등록 성공.", ip), "shutdown", true, false);
+					Agent.log(ip, String.format("%s ICMP 등록 성공.", ip), Log.Type.SHUTDOWN, true, false);
 				}
 			}
 			
@@ -131,7 +131,7 @@ public class ICMPAgent implements ICMPListener, Closeable {
 				Agent.syslog(Util.EToString(ioe));
 			}
 			
-			Agent.log(node.ip, String.format("%s ICMP 정상.", node.ip), "shutdown", true, true);
+			Agent.log(node.ip, String.format("%s ICMP 정상.", node.ip), Log.Type.SHUTDOWN, true, true);
 		}
 		
 		node.ping(1000);
@@ -153,7 +153,7 @@ public class ICMPAgent implements ICMPListener, Closeable {
 				Agent.syslog(Util.EToString(ioe));
 			}
 			
-			Agent.log(node.ip, String.format("%s ICMP 응답 없음.", node.ip), "shutdown", false, true);
+			Agent.log(node.ip, String.format("%s ICMP 응답 없음.", node.ip), Log.Type.SHUTDOWN, false, true);
 		}
 		
 		node.ping(0);

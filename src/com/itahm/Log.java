@@ -14,6 +14,10 @@ import com.itahm.util.Util;
 
 public class Log {
 
+	public enum Type {
+		SYSTEM, SHUTDOWN, CRITICAL;
+	};
+
 	public final static String SHUTDOWN = "shutdown";
 	public final static String CRITICAL = "critical";
 	

@@ -21,6 +21,7 @@ import com.itahm.json.JSONException;
 import com.itahm.json.JSONObject;
 import com.itahm.command.Command;
 import com.itahm.command.Commander;
+import com.itahm.http.HTTPException;
 import com.itahm.http.Request;
 import com.itahm.http.Response;
 import com.itahm.http.Session;
@@ -37,14 +38,19 @@ import com.itahm.enterprise.Enterprise;
 public class Agent {
 
 	/* Configuration */
-	public static boolean isDemo = false;
-	private static final byte [] license = new byte [] {(byte)0x6c, (byte)0x3b, (byte)0xe5, (byte)0x51, (byte)0x25, (byte)0x4c};
-	//private static final byte [] license = null;
-	private static long expire = 1546268400000L;
+	// args로 debug가 넘어오면 true로 변경됨
+	public static boolean isDebug = false;
+	// 30일 데모 버전 출시용 true, itahm.com의 요청만 처리함
+	public static boolean isDemo = true;
+	// node 제한 0: 무제한
+	public static int limit = 10;
+	// 라이센스 mac address null: 데모 버전에만 적용할것
+	private static final byte [] license = null; // new byte [] {(byte)0x6c, (byte)0x3b, (byte)0xe5, (byte)0x51, (byte)0x2D, (byte)0x80};
+	// 라이선스 만료일 0: 무제한, isDemo true인 경우 자동 set
+	private static long expire = 0; // 1546268400000L;
 	/* Configuration */
 	
-	public final static String VERSION = "2.0.3.1";
-	public final static String API_KEY = "AIzaSyBg6u1cj9pPfggp-rzQwvdsTGKPgna0RrA";
+	public final static String VERSION = "2.0.3.2";
 	private final static long DAY1 = 24 *60 *60 *1000;
 	private final static String DATA = "data";
 	public final static int MAX_TIMEOUT = 10000;
@@ -107,15 +113,16 @@ public class Agent {
 			 JSONObject account = accountData.getJSONObject(username);
 			 
 			 if (account.getString("password").equals(password)) {
-				// signin �꽦怨�, cookie 諛쒗뻾
-				return Session.getInstance(account.getInt("level"));
+				return Session.getInstance(new JSONObject()
+					.put("username", username)
+					.put("level", account.getInt("level")));
 			 }
 		}
 		
 		return null;
 	}
 
-	private static Session getSession(Request request) {
+	public static Session getSession(Request request) {
 		String cookie = request.getRequestHeader(Request.Header.COOKIE);
 		
 		if (cookie == null) {
@@ -184,8 +191,8 @@ public class Agent {
 		getTable(Table.Name.CONFIG).save();
 	}
 	
-	public static void log(String ip, String message, String type, boolean status, boolean broadcast) {
-		log.write(ip, message, type, status, broadcast);
+	public static void log(String ip, String message, Log.Type type, boolean status, boolean broadcast) {
+		log.write(ip, message, type.toString().toLowerCase(), status, broadcast);
 	}
 	
 	public static void sendEvent(String message) {
@@ -235,6 +242,7 @@ public class Agent {
 		return snmp.removeNode(ip);
 	}
 	
+	// search로부터 오면 onFailure가 false, monitor로부터 오면 true
 	public static void testSNMPNode(String ip, boolean onFailure) {
 		snmp.testNode(ip, onFailure);
 	}
@@ -321,20 +329,18 @@ public class Agent {
 			if (session == null) {
 				try {
 					session = signIn(data);
+					
+					if (session == null) {
+						return Response.getInstance(Response.Status.UNAUTHORIZED);
+					}
 				} catch (JSONException jsone) {
 					return Response.getInstance(Response.Status.BADREQUEST
 						, new JSONObject().put("error", "invalid json request").toString());
 				}
 			}
 			
-			if (session == null) {
-				return Response.getInstance(Response.Status.UNAUTHORIZED);
-			}
-			
-			return Response.getInstance(Response.Status.OK, new JSONObject()
-				.put("level", (int)session.getExtras())
-				.put("version", VERSION).toString())
-					.setResponseHeader("Set-Cookie", String.format("SESSION=%s; HttpOnly", session.getCookie()));
+			return Response.getInstance(Response.Status.OK, ((JSONObject)session.getExtras()).toString())
+				.setResponseHeader("Set-Cookie", String.format("SESSION=%s; HttpOnly", session.getCookie()));
 		}
 		else if ("signout".equals(cmd)) {
 			if (session != null) {
@@ -352,10 +358,6 @@ public class Agent {
 		}
 		
 		try {
-			if ("put".equals(cmd) && "gcm".equals(data.getString("database"))) {
-				return command.execute(request, data);
-			}
-			
 			if (session != null) {
 				return command.execute(request, data);
 			}
@@ -363,6 +365,9 @@ public class Agent {
 		catch (IOException ioe) {
 			return Response.getInstance(Response.Status.UNAVAILABLE
 				, new JSONObject().put("error", ioe).toString());
+		}
+		catch (HTTPException httpe) {
+			return Response.getInstance(Response.Status.valueOf(httpe.getStatus()));
 		}
 			
 		return Response.getInstance(Response.Status.UNAUTHORIZED);
@@ -444,6 +449,8 @@ public class Agent {
 			
 			switch(args[i].substring(1).toUpperCase()) {
 			case "DEBUG":
+				isDebug = true;
+				
 				break;
 			case "PATH":
 				path = new File(args[++i]);

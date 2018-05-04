@@ -137,13 +137,32 @@ public class SNMPAgent extends Snmp implements Closeable {
 		pdu.add(new VariableBinding(RequestOID.hrStorageUsed));
 	}
 	
-	public void addNode(String ip, String profileName) throws IOException {
-		JSONObject profile = profileTable.getJSONObject(profileName);
+	public boolean  registerNode(String ip, String profileName) {
+		if (Agent.limit > 0 && this.nodeList.size() >= Agent.limit) {
+			Agent.log("ITAhM", String.format("라이선스 초과 %d", Agent.limit), Log.Type.SYSTEM, false, true);
+			
+			return false;
+		}
+		else {
+			try {
+				addNode(ip, profileName);
+			} catch (IOException ioe) {
+				Agent.syslog(Util.EToString(ioe));
+				
+				Agent.log(ip, "시스템에 심각한 오류가 있습니다.", Log.Type.SYSTEM, false, false);
+			}
+			
+			return true;
+		}
+	}
+	
+	private void addNode(String ip, String profileName) throws IOException {		
+		final JSONObject profile = profileTable.getJSONObject(profileName);
 		
 		if (profile == null) {
 			Agent.syslog(String.format("%s profile not found %s", ip, profileName));
 			
-			return;
+			return ;
 		}
 		
 		SNMPNode node;
@@ -317,14 +336,10 @@ public class SNMPAgent extends Snmp implements Closeable {
 		node.setCritical(critical);
 	}
 	
-	public void testNode(final String ip) {
-		testNode(ip, true);
-	}
-	
 	public void testNode(final String ip, boolean onFailure) {
 		if (this.nodeList.containsKey(ip)) {
 			if(onFailure) {
-				Agent.log(ip, "이미 등록된 노드 입니다.", "information", false, false);
+				Agent.log(ip, "이미 등록된 노드 입니다.", Log.Type.SYSTEM, false, false);
 			}
 			
 			return;
@@ -507,7 +522,7 @@ public class SNMPAgent extends Snmp implements Closeable {
 			
 			Agent.log(ip,
 				(nodeData != null && nodeData.has("sysName"))? String.format("%s [%s] 정상.", ip, nodeData.getString("sysName")): String.format("%s 정상.", ip),
-				"shutdown", true, true);
+						Log.Type.SHUTDOWN, true, true);
 		}
 	}
 	
@@ -540,7 +555,7 @@ public class SNMPAgent extends Snmp implements Closeable {
 			
 			Agent.log(ip,
 				(nodeData != null && nodeData.has("sysName"))? String.format("%s [%s] 응답 없음.", ip, nodeData.getString("sysName")): String.format("%s 응답 없음.", ip),
-				"shutdown", false, true);
+				Log.Type.SHUTDOWN, false, true);
 		}
 		
 		sendRequest(node);
@@ -585,7 +600,7 @@ public class SNMPAgent extends Snmp implements Closeable {
 		
 		Agent.log(ip,
 			nodeData.has("sysName")? String.format("%s [%s] %s", ip, nodeData.getString("sysName"), message): String.format("%s %s", ip, message),
-			"critical", !critical, true);
+			Log.Type.CRITICAL, !critical, true);
 		
 	}
 	

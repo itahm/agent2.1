@@ -26,8 +26,6 @@ public class SNMPNode extends Node {
 	
 	public enum Rolling {
 		HRPROCESSORLOAD("hrProcessorLoad"),
-		//IFINBYTES("ifInBytes"),
-		//IFOUTBYTES("ifOutBytes"),
 		IFINOCTETS("ifInOctets"),
 		IFOUTOCTETS("ifOutOctets"),
 		IFINERRORS("ifInErrors"),

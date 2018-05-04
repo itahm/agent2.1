@@ -21,59 +21,49 @@ public class Response {
 	private byte [] body;
 	
 	public enum Status {
-		OK, BADREQUEST, UNAUTHORIZED, NOTFOUND, NOTALLOWED, VERSIONNOTSUP, CONFLICT, UNAVAILABLE, SERVERERROR
+		OK(200, "OK"),
+		BADREQUEST(400, "Bad request"),
+		UNAUTHORIZED(401, "Unauthorized"),
+		NOTFOUND(404, "Not found"),
+		NOTALLOWED(405, "Method Not Allowed"),
+		CONFLICT(409, "Conflict"),
+		SERVERERROR(500, "Internal Server Error"),
+		UNAVAILABLE(503, "Service Unavailable"),
+		VERSIONNOTSUP(505, "HTTP Version Not Supported");
+		
+		private final int code;
+		private final String text;
+		
+		private Status(int code, String text) {
+			this.code = code;
+			this.text = text;
+		}
+		
+		public int getCode() {
+			return this.code;
+		}
+		
+		public String getText() {
+			return this.text;
+		}
+		
+		public static Status valueOf(int code) {
+			for (Status status : Status.values()) {
+				if (status.getCode() == code) {
+					return status;
+				}
+			}
+			
+			return null;
+		}
 	};
 	
 	private Response(Status status, byte [] body) {
-		int code = 200;
-		String reason = "OK";
-		
-		switch (status) {
-		case BADREQUEST:
-			code = 400;
-			reason = "Bad request";
-			
-			break;
-		case NOTFOUND:
-			code = 404;
-			reason = "Not found";
-			
-			break;
-		case NOTALLOWED:
-			code = 405;
-			reason = "Method Not Allowed";
-			
+		if (status.equals(Status.NOTALLOWED)) {
 			setResponseHeader("Allow", "GET");
-			
-			break;
-		case UNAUTHORIZED:
-			code = 401;
-			reason = "Unauthorized";
-			
-			break;
-		case SERVERERROR:
-			code = 500;
-			reason = "Internal Server Error";
-			
-			break;
-		case VERSIONNOTSUP:
-			code = 505;
-			reason = "HTTP Version Not Supported";
-			
-			break;
-		case CONFLICT:
-			code = 409;
-			reason = "Conflict";
-			
-			break;
-		case UNAVAILABLE:
-			code = 503;
-			reason = "Service Unavailable";
-			
-		case OK:
 		}
 		
-		this.startLine = String.format("HTTP/1.1 %d %s" +CRLF, code, reason);
+		this.startLine = String.format("HTTP/1.1 %d %s" +CRLF, status.getCode(), status.getText());
 		
 		this.body = body;
 	}
