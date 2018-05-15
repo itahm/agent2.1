@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeSet;
+
 import com.itahm.Log;
 import com.itahm.SNMPAgent;
 import com.itahm.ICMPAgent;
@@ -41,9 +43,9 @@ public class Agent {
 	// args로 debug가 넘어오면 true로 변경됨
 	public static boolean isDebug = false;
 	// 30일 데모 버전 출시용 true, itahm.com의 요청만 처리함
-	public static boolean isDemo = true;
+	public static boolean isDemo = false;
 	// node 제한 0: 무제한
-	public static int limit = 10;
+	public static int limit = 0;
 	// 라이센스 mac address null: 데모 버전에만 적용할것
 	private static final byte [] license = null; // new byte [] {(byte)0x6c, (byte)0x3b, (byte)0xe5, (byte)0x51, (byte)0x2D, (byte)0x80};
 	// 라이선스 만료일 0: 무제한, isDemo true인 경우 자동 set
@@ -59,6 +61,7 @@ public class Agent {
 	public final static int DEF_TIMEOUT = 3000;
 	
 	private static Map<Table.Name, Table> tables = new HashMap<>();
+	private static TreeSet<Integer> validIFType = null;
 	private static Log log;
 	private static SNMPAgent snmp;
 	private static ICMPAgent icmp;
@@ -83,6 +86,10 @@ public class Agent {
 		tables.put(Table.Name.SMS, new Table(dataRoot, Table.Name.SMS));
 		
 		config = getTable(Table.Name.CONFIG).getJSONObject();
+		
+		if (config.has("iftype")) {
+			setValidIFType(config.getString("iftype"));
+		}
 		
 		log = new Log(dataRoot);
 		
@@ -189,6 +196,27 @@ public class Agent {
 		config.put(key, value);
 		
 		getTable(Table.Name.CONFIG).save();
+	}
+	
+	public static void setValidIFType(String iftype) {
+		TreeSet<Integer> ts = new TreeSet<>();
+		
+		for (String type : iftype.split(",")) {
+			try {
+				ts.add(Integer.parseInt(type));
+			}
+			catch (NumberFormatException nfe) {}
+		}
+		
+		validIFType = ts.size() == 0? null: ts;
+	}
+	
+	public static boolean isValidIFType(int type) {
+		if (validIFType == null) {
+			return true;
+		}
+		
+		return validIFType.contains(type);
 	}
 	
 	public static void log(String ip, String message, Log.Type type, boolean status, boolean broadcast) {
