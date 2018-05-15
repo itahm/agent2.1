@@ -13,13 +13,11 @@ public class Config implements Command {
 	@Override
 	public Response execute(Request request, JSONObject data) throws IOException {
 		try {
-			String key = data.getString("key");
+			final String key = data.getString("key");
 			
 			switch(key) {
 			case "clean":
-				int clean = data.getInt("value");
-				
-				Agent.config(key, clean);
+				Agent.config(key, data.getInt("value"));
 				
 				Agent.clean();
 				
@@ -34,20 +32,21 @@ public class Config implements Command {
 				
 				break;
 			case "sms":
-				Agent.config(key, data.getBoolean("value"));
-				
-				break;
-			case "interval":
-				Agent.config(key, data.getInt("value"));
-				
-				break;
 			case "menu":
 				Agent.config(key, data.getBoolean("value"));
 				
 				break;
+			case "interval":
 			case "top":
 				Agent.config(key, data.getInt("value"));
 			
+				break;
+			case "iftype":
+				String iftype = data.getString("value");
+				
+				Agent.config(key, iftype);
+			
+				Agent.setValidIFType(iftype);
 				break;
 			default:
 				Agent.config(key, data.getString("value"));

@@ -12,13 +12,13 @@ public class Monitor extends Table {
 		super(dataRoot, Name.MONITOR);
 	}
 	
-	private void remove(JSONObject monitor, String ip) throws IOException {
-		if ("snmp".equals(monitor.getString("protocol"))) {
+	private void remove(String ip, String protocol) throws IOException {
+		if ("snmp".equals(protocol)) {
 			if (Agent.removeSNMPNode(ip)) {
 				Agent.getTable(Name.CRITICAL).put(ip, null);
 			}
 		}
-		else if ("icmp".equals(monitor.getString("protocol"))) {
+		else if ("icmp".equals(protocol)) {
 			Agent.removeICMPNode(ip);
 		}
 		
@@ -26,20 +26,26 @@ public class Monitor extends Table {
 	}
 	
 	public JSONObject put(String ip, JSONObject monitor) throws IOException {
+		// icmp 에서 snmp로 또는 snmp 에서 icmp로 변경되는 상황
+		// 기존 모니터는 지워주자.
 		if (super.table.has(ip)) {
-			remove(super.table.getJSONObject(ip), ip);
+			remove(ip, super.table.getJSONObject(ip).getString("protocol"));
 		}
 		
 		if (monitor != null) {
 			super.put(ip, null);
 			
-			if ("snmp".equals(monitor.getString("protocol"))) {
+			switch(monitor.getString("protocol")) {
+			case "snmp":
 				Agent.testSNMPNode(ip, true);
-			}
-			else if ("icmp".equals(monitor.getString("protocol"))) {
+				
+				break;
+			case "icmp":
 				Agent.testICMPNode(ip);
+				
+				break;
 			}
-		}
+		}// else 위에서 처리 되었음.
 		
 		return super.table;
 	}

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
@@ -564,12 +565,25 @@ public abstract class Node implements Runnable, Closeable {
 			
 			this.isInitialized = true;
 			
+			// 원하지 않는 인터페이스 정보 삭제.
+			JSONObject jsono;
+			for (Iterator<String> it = this.ifEntry.keySet().iterator(); it.hasNext();) {
+				jsono = this.ifEntry.get(it.next());
+				
+				if (!jsono.has("ifType") || !Agent.isValidIFType(jsono.getInt("ifType"))) {
+					it.remove();
+				}
+				else {
+					
+				}
+			}
+						
 			onResponse(true);
 			
 			this.data.put("hrProcessorEntry", this.hrProcessorEntry);
 			this.data.put("hrStorageEntry", this.hrStorageEntry);
+			this.data.put("hrSWRunName", this.hrSWRunName);			
 			this.data.put("ifEntry", this.ifEntry);
-			this.data.put("hrSWRunName", this.hrSWRunName);
 		}
 	}
 	
